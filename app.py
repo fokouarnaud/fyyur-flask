@@ -177,7 +177,6 @@ def search_venues():
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
   
-
     tag = request.form.get('search_term', '')
     search_term = "%{}%".format(tag)
     venues = Venue.query.filter(Venue.name.ilike(search_term)).all()
@@ -606,8 +605,23 @@ def shows():
         "artist_image_link": "https://images.unsplash.com/photo-1558369981-f9ca78462e61?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=794&q=80",
         "start_time": "2035-04-15T20:00:00.000Z"
     }]
+
+    shows=  Show.query.all()
+    print(shows[1].artist_id)
+    data= list(map(map_shows, shows))
+    print(data)
     return render_template('pages/shows.html', shows=data)
 
+def map_shows(show):
+    artist= Artist.query.get(show.artist_id)
+    return {
+        "venue_id": show.venue_id,
+        "venue_name": show.venue.name,
+        "artist_id": show.artist_id,
+        "artist_name": artist.name,
+        "artist_image_link":  artist.image_link,
+        "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+    }
 
 @app.route('/shows/create')
 def create_shows():
