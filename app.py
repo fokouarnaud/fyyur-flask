@@ -144,7 +144,7 @@ def num_upcoming_shows(venue):
     return {
         "id": venue.id,
         "name": venue.name,
-        "num_upcoming_shows": db.session.query(Show).join(Venue).filter(Show.venue_id == venue.id).filter(Show.start_time > current_time).count()
+        "num_upcoming_shows": db.session.query(Show).filter(Show.venue_id == venue.id).filter(Show.start_time > current_time).count()
     }
 
 
@@ -197,24 +197,24 @@ def search_venues():
 def show_venue(venue_id):
     # shows the venue page with the given venue_id
     # TODO: replace with real venue data from the venues table, using venue_id
-   
+
     venue = Venue.query.get(venue_id)
 
-    upcoming_shows_count = db.session.query(Show).join(Artist).filter(
+    upcoming_shows_count = db.session.query(Show).filter(
         Show.venue_id == venue_id).filter(Show.start_time >= datetime.now()).count()
 
-    upcoming_shows_data = db.session.query(Show).join(Artist).filter(
+    upcoming_shows_data = db.session.query(Show).filter(
         Show.venue_id == venue_id).filter(Show.start_time >= datetime.now()).all()
 
-    upcoming_shows = list(map(map_shows, upcoming_shows_data))
+    upcoming_shows = list(map(map_shows_venue, upcoming_shows_data))
 
-    past_shows_count = db.session.query(Show).join(Artist).filter(
+    past_shows_count = db.session.query(Show).filter(
         Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).count()
 
-    past_shows_data = db.session.query(Show).join(Artist).filter(
+    past_shows_data = db.session.query(Show).filter(
         Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
 
-    past_shows = list(map(map_shows, past_shows_data))
+    past_shows = list(map(map_shows_venue, past_shows_data))
 
     data = {
         "id": venue.id,
@@ -232,21 +232,20 @@ def show_venue(venue_id):
         "past_shows": past_shows,
         "upcoming_shows": upcoming_shows,
         "past_shows_count": past_shows_count,
-        "upcoming_shows_count":upcoming_shows_count
+        "upcoming_shows_count": upcoming_shows_count
     }
 
     return render_template('pages/show_venue.html', venue=data)
 
-def map_shows(show):
-    artist=Artist.query.get(show.artist_id)
+
+def map_shows_venue(show):
+    artist = Artist.query.get(show.artist_id)
     return {
         "artist_id": show.artist_id,
         "artist_name": artist.name,
         "artist_image_link": artist.image_link,
         "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
     }
-    
-
 
 
 #  Create Venue
@@ -417,9 +416,52 @@ def show_artist(artist_id):
         "past_shows_count": 0,
         "upcoming_shows_count": 3,
     }
-    data = list(filter(lambda d: d['id'] ==
-                artist_id, [data1, data2, data3]))[0]
+    artist = Artist.query.get(artist_id)
+
+    upcoming_shows_count = db.session.query(Show).filter(
+        Show.artist_id == artist_id).filter(Show.start_time >= datetime.now()).count()
+
+    upcoming_shows_data = db.session.query(Show).filter(
+        Show.artist_id == artist_id).filter(Show.start_time >= datetime.now()).all()
+
+    upcoming_shows = list(map(map_shows_artist, upcoming_shows_data))
+
+    past_shows_count = db.session.query(Show).filter(
+        Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).count()
+
+    past_shows_data = db.session.query(Show).filter(
+        Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).all()
+
+    past_shows = list(map(map_shows_artist, past_shows_data))
+
+    data = {
+        "id": artist.id,
+        "name": artist.name,
+        "genres": json.loads(artist.genres),
+        "city": artist.city,
+        "state": artist.state,
+        "phone": artist.phone,
+        "website": artist.website,
+        "facebook_link": artist.facebook_link,
+        "seeking_venue": artist.seeking_venue,
+        "seeking_description": artist.seeking_description,
+        "image_link": artist.image_link,
+        "past_shows": past_shows,
+        "upcoming_shows": upcoming_shows,
+        "past_shows_count": past_shows_count,
+        "upcoming_shows_count": upcoming_shows_count
+    }
+
     return render_template('pages/show_artist.html', artist=data)
+
+
+def map_shows_artist(show):
+    return {
+        "venue_id": show.venue_id,
+        "venue_name": show.venue.name,
+        "venue_image_link": show.venue.image_link,
+        "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
+    }
 
 #  Update
 #  ----------------------------------------------------------------
@@ -442,6 +484,17 @@ def edit_artist(artist_id):
         "image_link": "https://images.unsplash.com/photo-1549213783-8284d0336c4f?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=crop&w=300&q=80"
     }
     # TODO: populate form with fields from artist with ID <artist_id>
+    artist = Artist.query.get(artist_id)
+    form.name.data = artist.name
+    form.city.data = artist.city
+    form.state.data = artist.state
+    form.phone.data = artist.phone
+    form.image_link.data = artist.image_link
+    form.facebook_link.data = artist.facebook_link
+    form.website_link.data = artist.website
+    form.genres.data = artist.genres
+    form.seeking_venue.data = artist.seeking_venue
+    form.seeking_description.data = artist.seeking_description
     return render_template('forms/edit_artist.html', form=form, artist=artist)
 
 
