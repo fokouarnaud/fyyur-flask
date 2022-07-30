@@ -34,14 +34,6 @@ migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 
 
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
-Show = db.Table('Show',
-                db.Column('venue_id', db.Integer, db.ForeignKey(
-                    'Venue.id'), primary_key=True),
-                db.Column('artist_id', db.Integer, db.ForeignKey(
-                    'Artist.id'), primary_key=True)
-                )
-
 
 class Venue(db.Model):
     __tablename__ = 'Venue'
@@ -92,8 +84,8 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_description = db.Column(db.String)
     seeking_venue = db.Column(db.Boolean)
-    venues = db.relationship('Venue', secondary=Show,
-                             backref=db.backref('artists', lazy=True))
+    venues = db.relationship('Show')
+
     def __repr__(self):
         return f'''
       <Artist {self.id},
@@ -109,9 +101,18 @@ class Artist(db.Model):
       {self.seeking_venue}
       >'''
 
+# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+class Show(db.Model):
+    __tablename__ = 'Show'
+    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
+    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
+    start_time = db.Column(db.DateTime)
+    venue = db.relationship('Venue')
+
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
+
 
 def format_datetime(value, format='medium'):
     date = dateutil.parser.parse(value)
@@ -527,17 +528,17 @@ def create_artist_submission():
         dataForm = request.form.to_dict()
 
         artist = Artist(name=dataForm['name'],
-                      city=dataForm['city'],
-                      state=dataForm['state'],
-                      phone=dataForm['phone'],
-                      image_link=dataForm['image_link'],
-                      facebook_link=dataForm['facebook_link'],
-                      genres=genres,
-                      website=dataForm['website_link'],
-                      seeking_description=dataForm['seeking_description'],
-                      seeking_venue=True if request.form.get(
-                          "seeking_venue") else False
-                      )
+                        city=dataForm['city'],
+                        state=dataForm['state'],
+                        phone=dataForm['phone'],
+                        image_link=dataForm['image_link'],
+                        facebook_link=dataForm['facebook_link'],
+                        genres=genres,
+                        website=dataForm['website_link'],
+                        seeking_description=dataForm['seeking_description'],
+                        seeking_venue=True if request.form.get(
+            "seeking_venue") else False
+        )
         # TODO: insert form data as a new Artist record in the db, instead
         db.session.add(artist)
         db.session.commit()
@@ -618,14 +619,37 @@ def create_shows():
 
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
-    # called to create new shows in the db, upon submitting new show listing form
-    # TODO: insert form data as a new Show record in the db, instead
+    error = False
+    body = {}
+    try:
 
-    # on successful db insert, flash success
-    flash('Show was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Show could not be listed.')
-    # see: http://flask.pocoo.org/docs/1.0/patterns/flashing/
+        dataForm = request.form.to_dict()
+        start_time = dataForm['start_time']
+       
+
+        artist = Artist.query.get(dataForm['artist_id'])
+        show= Show(start_time=start_time)
+        show.venue = Venue.query.get(dataForm['venue_id'])
+        artist.venues.append(show)
+
+        # TODO: insert form data as a new Show record in the db, instead
+        db.session.commit()
+
+        # TODO: modify data to be the data object returned from db insertion
+
+    except:
+        db.session.rollback()
+        error = True
+
+    finally:
+        db.session.close()
+    if error:
+        # TODO: on unsuccessful db insert, flash an error instead.
+        flash('An error occurred. Show could not be listed.')
+    else:
+        # on successful db insert, flash success
+        flash('Show was successfully listed!')
+
     return render_template('pages/home.html')
 
 
