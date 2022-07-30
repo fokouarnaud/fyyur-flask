@@ -62,18 +62,18 @@ class Venue(db.Model):
 
     def __repr__(self):
         return f'''
-      <Venue {self.id}, 
-      {self.name} , 
-      {self.city} , 
-      {self.state} , 
-      {self.address} , 
-      {self.phone} , 
-      {self.image_link} , 
-      {self.facebook_link} , 
-      {self.genres} , 
-      {self.website} , 
-      {self.seeking_description} , 
-      {self.seeking_talent} 
+      <Venue {self.id},
+      {self.name} ,
+      {self.city} ,
+      {self.state} ,
+      {self.address} ,
+      {self.phone} ,
+      {self.image_link} ,
+      {self.facebook_link} ,
+      {self.genres} ,
+      {self.website} ,
+      {self.seeking_description} ,
+      {self.seeking_talent}
       >'''
 
 
@@ -94,7 +94,20 @@ class Artist(db.Model):
     seeking_venue = db.Column(db.Boolean)
     venues = db.relationship('Venue', secondary=Show,
                              backref=db.backref('artists', lazy=True))
-
+    def __repr__(self):
+        return f'''
+      <Artist {self.id},
+      {self.name} ,
+      {self.city} ,
+      {self.state} ,
+      {self.phone} ,
+      {self.image_link} ,
+      {self.facebook_link} ,
+      {self.genres} ,
+      {self.website} ,
+      {self.seeking_description} ,
+      {self.seeking_venue}
+      >'''
 
 #----------------------------------------------------------------------------#
 # Filters.
@@ -311,7 +324,6 @@ def create_venue_submission():
     return render_template('pages/home.html')
 
 
-
 @app.route('/venues/<venue_id>', methods=['DELETE'])
 def delete_venue(venue_id):
     # TODO: Complete this endpoint for taking a venue_id, and using
@@ -507,14 +519,47 @@ def create_artist_form():
 
 @app.route('/artists/create', methods=['POST'])
 def create_artist_submission():
-    # called upon submitting the new artist listing form
-    # TODO: insert form data as a new Venue record in the db, instead
-    # TODO: modify data to be the data object returned from db insertion
+    error = False
+    body = {}
+    try:
 
-    # on successful db insert, flash success
-    flash('Artist ' + request.form['name'] + ' was successfully listed!')
-    # TODO: on unsuccessful db insert, flash an error instead.
-    # e.g., flash('An error occurred. Artist ' + data.name + ' could not be listed.')
+        genres = json.dumps(request.form.getlist('genres'))
+        dataForm = request.form.to_dict()
+
+        artist = Artist(name=dataForm['name'],
+                      city=dataForm['city'],
+                      state=dataForm['state'],
+                      phone=dataForm['phone'],
+                      image_link=dataForm['image_link'],
+                      facebook_link=dataForm['facebook_link'],
+                      genres=genres,
+                      website=dataForm['website_link'],
+                      seeking_description=dataForm['seeking_description'],
+                      seeking_venue=True if request.form.get(
+                          "seeking_venue") else False
+                      )
+        # TODO: insert form data as a new Artist record in the db, instead
+        db.session.add(artist)
+        db.session.commit()
+
+        # TODO: modify data to be the data object returned from db insertion
+        body['id'] = artist.id
+        body['name'] = artist.name
+
+    except:
+        db.session.rollback()
+        error = True
+
+    finally:
+        db.session.close()
+    if error:
+        # TODO: on unsuccessful db insert, flash an error instead.
+        flash('An error occurred. Artist ' +
+              request.form['name'] + ' could not be listed.')
+    else:
+        # on successful db insert, flash success
+        flash('Artist ' + body['name'] + ' was successfully listed!')
+
     return render_template('pages/home.html')
 
 
