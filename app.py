@@ -357,6 +357,14 @@ def search_artists():
             "name": "Guns N Petals",
             "num_upcoming_shows": 0,
         }]
+    } 
+    tag=request.form.get('search_term', '')
+    search_term="%{}%".format(tag)
+    artists= Artist.query.filter(Artist.name.like(search_term)).all()
+    count= Artist.query.filter(Artist.name.like(search_term)).count()
+    response = {
+        "count": count,
+        "data": artists
     }
     return render_template('pages/search_artists.html', results=response, search_term=request.form.get('search_term', ''))
 
