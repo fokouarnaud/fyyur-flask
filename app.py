@@ -138,14 +138,7 @@ def index():
 #  Venues
 #  ----------------------------------------------------------------
 
-@app.route('/venues')
-def venues():
-    # TODO: replace with real venues data.
-    #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-   
-
-
-    def num_upcoming_shows(venue):
+def num_upcoming_shows(venue):
         current_time = datetime.now().strftime('%Y-%m-%d %H:%S:%M')
         return {
             "id": venue.id,
@@ -153,6 +146,10 @@ def venues():
             "num_upcoming_shows": db.session.query(Show).join(Venue).filter(Show.venue_id == venue.id).filter(Show.start_time > current_time).count()
         }
 
+@app.route('/venues')
+def venues():
+    # TODO: replace with real venues data.
+    #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
     data = []
     city_state_items = Venue.query.with_entities(
         Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
@@ -163,8 +160,7 @@ def venues():
         city_state_venues = Venue.query.filter_by(
             state=state).filter_by(city=city).all()
 
-        city_state_venues_map = list(
-            map(num_upcoming_shows, city_state_venues))
+        city_state_venues_map = list(map(num_upcoming_shows, city_state_venues))
         data.append({
             "city": city,
             "state": state,
@@ -180,13 +176,17 @@ def search_venues():
     # TODO: implement search on venues with partial string search. Ensure it is case-insensitive.
     # seach for Hop should return "The Musical Hop".
     # search for "Music" should return "The Musical Hop" and "Park Square Live Music & Coffee"
+  
+
+    tag = request.form.get('search_term', '')
+    search_term = "%{}%".format(tag)
+    venues = Venue.query.filter(Venue.name.ilike(search_term)).all()
+    count = Venue.query.filter(Venue.name.ilike(search_term)).count()
+   
+    venues_map= list(map(num_upcoming_shows, venues))
     response = {
-        "count": 1,
-        "data": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
+        "count": count,
+        "data": venues_map
     }
     return render_template('pages/search_venues.html', results=response, search_term=request.form.get('search_term', ''))
 
@@ -360,8 +360,8 @@ def search_artists():
     # search for "band" should return "The Wild Sax Band".
     tag = request.form.get('search_term', '')
     search_term = "%{}%".format(tag)
-    artists = Artist.query.filter(Artist.name.like(search_term)).all()
-    count = Artist.query.filter(Artist.name.like(search_term)).count()
+    artists = Artist.query.filter(Artist.name.ilike(search_term)).all()
+    count = Artist.query.filter(Artist.name.ilike(search_term)).count()
     response = {
         "count": count,
         "data": artists
