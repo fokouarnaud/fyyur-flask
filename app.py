@@ -341,16 +341,7 @@ def delete_venue(venue_id):
 @app.route('/artists')
 def artists():
     # TODO: replace with real data returned from querying the database
-    data = [{
-        "id": 4,
-        "name": "Guns N Petals",
-    }, {
-        "id": 5,
-        "name": "Matt Quevedo",
-    }, {
-        "id": 6,
-        "name": "The Wild Sax Band",
-    }]
+    data = Artist.query.all()
     return render_template('pages/artists.html', artists=data)
 
 
@@ -620,13 +611,12 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
     error = False
-    body = {}
+   
     try:
 
         dataForm = request.form.to_dict()
         start_time = dataForm['start_time']
        
-
         artist = Artist.query.get(dataForm['artist_id'])
         show= Show(start_time=start_time)
         show.venue = Venue.query.get(dataForm['venue_id'])
@@ -635,7 +625,6 @@ def create_show_submission():
         # TODO: insert form data as a new Show record in the db, instead
         db.session.commit()
 
-        # TODO: modify data to be the data object returned from db insertion
 
     except:
         db.session.rollback()
