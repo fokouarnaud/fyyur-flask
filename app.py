@@ -9,9 +9,6 @@ from flask import Flask, render_template, request, Response, flash, redirect, ur
 from flask_moment import Moment
 from flask_sqlalchemy import SQLAlchemy
 
-
-from sqlalchemy.dialects.postgresql import ARRAY
-
 from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
@@ -32,7 +29,6 @@ migrate = Migrate(app, db)
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
-
 
 
 class Venue(db.Model):
@@ -102,10 +98,14 @@ class Artist(db.Model):
       >'''
 
 # TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
+
+
 class Show(db.Model):
     __tablename__ = 'Show'
-    venue_id = db.Column(db.Integer, db.ForeignKey('Venue.id'), primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey('Artist.id'), primary_key=True)
+    venue_id = db.Column(db.Integer, db.ForeignKey(
+        'Venue.id'), primary_key=True)
+    artist_id = db.Column(db.Integer, db.ForeignKey(
+        'Artist.id'), primary_key=True)
     start_time = db.Column(db.DateTime)
     venue = db.relationship('Venue')
 
@@ -142,28 +142,36 @@ def index():
 def venues():
     # TODO: replace with real venues data.
     #       num_upcoming_shows should be aggregated based on number of upcoming shows per venue.
-    data = [{
-        "city": "San Francisco",
-        "state": "CA",
-        "venues": [{
-            "id": 1,
-            "name": "The Musical Hop",
-            "num_upcoming_shows": 0,
-        }, {
-            "id": 3,
-            "name": "Park Square Live Music & Coffee",
-            "num_upcoming_shows": 1,
-        }]
-    }, {
-        "city": "New York",
-        "state": "NY",
-        "venues": [{
-            "id": 2,
-            "name": "The Dueling Pianos Bar",
-            "num_upcoming_shows": 0,
-        }]
-    }]
-   # data=Artist.query.all()
+   
+
+
+    def num_upcoming_shows(venue):
+        current_time = datetime.now().strftime('%Y-%m-%d %H:%S:%M')
+        return {
+            "id": venue.id,
+            "name": venue.name,
+            "num_upcoming_shows": db.session.query(Show).join(Venue).filter(Show.venue_id == venue.id).filter(Show.start_time > current_time).count()
+        }
+
+    data = []
+    city_state_items = Venue.query.with_entities(
+        Venue.city, Venue.state).group_by(Venue.city, Venue.state).all()
+
+    for city_state in city_state_items:
+        state = city_state.state
+        city = city_state.city
+        city_state_venues = Venue.query.filter_by(
+            state=state).filter_by(city=city).all()
+
+        city_state_venues_map = list(
+            map(num_upcoming_shows, city_state_venues))
+        data.append({
+            "city": city,
+            "state": state,
+            "venues": city_state_venues_map
+        })
+
+    print(data)
     return render_template('pages/venues.html', areas=data)
 
 
@@ -350,18 +358,10 @@ def search_artists():
     # TODO: implement search on artists with partial string search. Ensure it is case-insensitive.
     # seach for "A" should return "Guns N Petals", "Matt Quevado", and "The Wild Sax Band".
     # search for "band" should return "The Wild Sax Band".
-    response = {
-        "count": 1,
-        "data": [{
-            "id": 4,
-            "name": "Guns N Petals",
-            "num_upcoming_shows": 0,
-        }]
-    } 
-    tag=request.form.get('search_term', '')
-    search_term="%{}%".format(tag)
-    artists= Artist.query.filter(Artist.name.like(search_term)).all()
-    count= Artist.query.filter(Artist.name.like(search_term)).count()
+    tag = request.form.get('search_term', '')
+    search_term = "%{}%".format(tag)
+    artists = Artist.query.filter(Artist.name.like(search_term)).all()
+    count = Artist.query.filter(Artist.name.like(search_term)).count()
     response = {
         "count": count,
         "data": artists
@@ -619,20 +619,19 @@ def create_shows():
 @app.route('/shows/create', methods=['POST'])
 def create_show_submission():
     error = False
-   
+
     try:
 
         dataForm = request.form.to_dict()
         start_time = dataForm['start_time']
-       
+
         artist = Artist.query.get(dataForm['artist_id'])
-        show= Show(start_time=start_time)
+        show = Show(start_time=start_time)
         show.venue = Venue.query.get(dataForm['venue_id'])
         artist.venues.append(show)
 
         # TODO: insert form data as a new Show record in the db, instead
         db.session.commit()
-
 
     except:
         db.session.rollback()
