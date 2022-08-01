@@ -161,11 +161,10 @@ def show_venue(venue_id):
 
 
 def map_shows_venue(show):
-    artist = Artist.query.get(show.artist_id)
     return {
         "artist_id": show.artist_id,
-        "artist_name": artist.name,
-        "artist_image_link": artist.image_link,
+        "artist_name": show.artist.name,
+        "artist_image_link": show.artist.image_link,
         "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
     }
 
@@ -533,13 +532,12 @@ def shows():
 
 
 def map_shows(show):
-    artist = Artist.query.get(show.artist_id)
     return {
         "venue_id": show.venue_id,
         "venue_name": show.venue.name,
         "artist_id": show.artist_id,
-        "artist_name": artist.name,
-        "artist_image_link":  artist.image_link,
+        "artist_name": show.artist.name,
+        "artist_image_link":  show.artist.image_link,
         "start_time": show.start_time.strftime('%Y-%m-%d %H:%M:%S')
     }
 
@@ -561,9 +559,16 @@ def create_show_submission():
         start_time = dataForm['start_time']
 
         artist = Artist.query.get(dataForm['artist_id'])
+        venue= Venue.query.get(dataForm['venue_id'])
+        
         show = Show(start_time=start_time)
-        show.venue = Venue.query.get(dataForm['venue_id'])
+        show.artist_id=artist.id
+        show.venue_id=venue.id
+        show.venue =venue
+       
         artist.venues.append(show)
+       
+
 
         # TODO: insert form data as a new Show record in the db, instead
         db.session.commit()

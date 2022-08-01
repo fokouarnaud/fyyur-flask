@@ -1,7 +1,6 @@
 from app import db
 
 
-
 class Venue(db.Model):
     __tablename__ = 'Venue'
 
@@ -18,6 +17,7 @@ class Venue(db.Model):
     website = db.Column(db.String)
     seeking_description = db.Column(db.String)
     seeking_talent = db.Column(db.Boolean)
+    artists = db.relationship("Show", back_populates="venue")
 
     def __repr__(self):
         return f'''
@@ -51,7 +51,7 @@ class Artist(db.Model):
     website = db.Column(db.String(120))
     seeking_description = db.Column(db.String)
     seeking_venue = db.Column(db.Boolean)
-    venues = db.relationship('Show')
+    venues = db.relationship("Show", back_populates="artist")
 
     def __repr__(self):
         return f'''
@@ -73,9 +73,19 @@ class Artist(db.Model):
 
 class Show(db.Model):
     __tablename__ = 'Show'
-    venue_id = db.Column(db.Integer, db.ForeignKey(
+    venue_id = db.Column(db.ForeignKey(
         'Venue.id'), primary_key=True)
-    artist_id = db.Column(db.Integer, db.ForeignKey(
+    artist_id = db.Column(db.ForeignKey(
         'Artist.id'), primary_key=True)
     start_time = db.Column(db.DateTime, nullable=False)
-    venue = db.relationship('Venue')
+    venue = db.relationship("Venue", back_populates="artists")
+    artist = db.relationship("Artist", back_populates="venues")
+
+    def __repr__(self):
+        return f'''
+      <Show {self.venue_id},
+      {self.artist_id} ,
+      {self.start_time} ,
+      {self.venue} ,
+      {self.artist} 
+      >'''
