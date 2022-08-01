@@ -2,19 +2,17 @@
 # Imports
 #----------------------------------------------------------------------------#
 
-from models import *
+
 import json
 from re import A
 import dateutil.parser
 import babel
 from flask import Flask, render_template, request, flash, redirect, url_for, abort, jsonify
 from flask_moment import Moment
-from flask_sqlalchemy import SQLAlchemy
-
-from flask_migrate import Migrate
 import logging
 from logging import Formatter, FileHandler
 from forms import *
+from models import setup_db, Show, Artist, Venue
 #----------------------------------------------------------------------------#
 # App Config.
 #----------------------------------------------------------------------------#
@@ -22,15 +20,12 @@ from forms import *
 app = Flask(__name__)
 moment = Moment(app)
 app.config.from_object('config')
-db = SQLAlchemy(app)
-
-migrate = Migrate(app, db)
 
 #----------------------------------------------------------------------------#
 # Models.
 #----------------------------------------------------------------------------#
 
-
+setup_db(app)
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -113,16 +108,10 @@ def show_venue(venue_id):
 
     venue = Venue.query.get(venue_id)
 
-    upcoming_shows_count = Show.query.filter(
-        Show.venue_id == venue_id).filter(Show.start_time >= datetime.now()).count()
-
     upcoming_shows_data = Show.query.filter(
         Show.venue_id == venue_id).filter(Show.start_time >= datetime.now()).all()
 
     upcoming_shows = list(map(map_shows_venue, upcoming_shows_data))
-
-    past_shows_count = Show.query.filter(
-        Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).count()
 
     past_shows_data = Show.query.filter(
         Show.venue_id == venue_id).filter(Show.start_time < datetime.now()).all()
@@ -144,8 +133,8 @@ def show_venue(venue_id):
         "image_link": venue.image_link,
         "past_shows": past_shows,
         "upcoming_shows": upcoming_shows,
-        "past_shows_count": past_shows_count,
-        "upcoming_shows_count": upcoming_shows_count
+        "past_shows_count": len(past_shows),
+        "upcoming_shows_count": len(upcoming_shows)
     }
 
     return render_template('pages/show_venue.html', venue=data)
@@ -178,6 +167,7 @@ def create_venue_submission():
     if not(form.validate()):
         for error in form.errors:
             flash(error)
+        
     try:
 
         genres = json.dumps(request.form.getlist('genres'))
@@ -196,7 +186,7 @@ def create_venue_submission():
                       seeking_talent=True if request.form.get(
                           "seeking_talent") else False
                       )
-
+        print(venue)
         db.session.add(venue)
         db.session.commit()
 
@@ -266,7 +256,7 @@ def search_artists():
     tag = request.form.get('search_term', '')
     search_term = "%{}%".format(tag)
     artists = Artist.query.filter(Artist.name.ilike(search_term)).all()
-    count = Artist.query.filter(Artist.name.ilike(search_term)).count()
+    count = len(artists)
     response = {
         "count": count,
         "data": artists
@@ -279,16 +269,14 @@ def show_artist(artist_id):
 
     artist = Artist.query.get(artist_id)
 
-    upcoming_shows_count =Show.query.filter(
-        Show.artist_id == artist_id).filter(Show.start_time >= datetime.now()).count()
+   
 
     upcoming_shows_data = Show.query.filter(
         Show.artist_id == artist_id).filter(Show.start_time >= datetime.now()).all()
 
     upcoming_shows = list(map(map_shows_artist, upcoming_shows_data))
 
-    past_shows_count = Show.query.filter(
-        Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).count()
+   
 
     past_shows_data = Show.query.filter(
         Show.artist_id == artist_id).filter(Show.start_time < datetime.now()).all()
@@ -309,8 +297,8 @@ def show_artist(artist_id):
         "image_link": artist.image_link,
         "past_shows": past_shows,
         "upcoming_shows": upcoming_shows,
-        "past_shows_count": past_shows_count,
-        "upcoming_shows_count": upcoming_shows_count
+        "past_shows_count": len(past_shows),
+        "upcoming_shows_count": len(upcoming_shows)
     }
 
     return render_template('pages/show_artist.html', artist=data)
@@ -533,8 +521,6 @@ def create_show_submission():
         show = Show(start_time=start_time)
         venue = Venue.query.get(dataForm['venue_id'])
 
-        show.artist_id = artist.id
-        show.venue_id = venue.id
         show.venue = venue
 
         artist.venues.append(show)

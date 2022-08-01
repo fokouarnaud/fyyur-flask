@@ -1,5 +1,13 @@
-from app import db
+from flask_sqlalchemy import SQLAlchemy
+from flask_migrate import Migrate
 
+
+db = SQLAlchemy()
+
+def setup_db(app):
+    db.app = app
+    db.init_app(app)
+    migrate = Migrate(app, db)
 
 class Venue(db.Model):
     __tablename__ = 'Venue'
