@@ -25,7 +25,7 @@ app.config.from_object('config')
 # Models.
 #----------------------------------------------------------------------------#
 
-setup_db(app)
+db= setup_db(app)
 #----------------------------------------------------------------------------#
 # Filters.
 #----------------------------------------------------------------------------#
@@ -162,12 +162,7 @@ def create_venue_form():
 @app.route('/venues/create', methods=['POST'])
 def create_venue_submission():
     error = False
-    body = {}
-    form = VenueForm()
-    if not(form.validate()):
-        for error in form.errors:
-            flash(error)
-        
+    body = {}   
     try:
 
         genres = json.dumps(request.form.getlist('genres'))
@@ -433,10 +428,6 @@ def create_artist_form():
 def create_artist_submission():
     error = False
     body = {}
-    form = ArtistForm()
-    if not(form.validate()):
-        for error in form.errors:
-            flash(error)
     try:
 
         genres = json.dumps(request.form.getlist('genres'))
@@ -520,7 +511,8 @@ def create_show_submission():
         artist = Artist.query.get(dataForm['artist_id'])
         show = Show(start_time=start_time)
         venue = Venue.query.get(dataForm['venue_id'])
-
+        show.artist_id = artist.id
+        show.venue_id = venue.id
         show.venue = venue
 
         artist.venues.append(show)

@@ -8,6 +8,7 @@ def setup_db(app):
     db.app = app
     db.init_app(app)
     migrate = Migrate(app, db)
+    return db
 
 class Venue(db.Model):
     __tablename__ = 'Venue'
