@@ -12,7 +12,6 @@ class Venue(db.Model):
     phone = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
     genres = db.Column(db.String)
     website = db.Column(db.String)
     seeking_description = db.Column(db.String)
@@ -47,11 +46,10 @@ class Artist(db.Model):
     genres = db.Column(db.String(120))
     image_link = db.Column(db.String(500))
     facebook_link = db.Column(db.String(120))
-    # TODO: implement any missing fields, as a database migration using Flask-Migrate
     website = db.Column(db.String(120))
     seeking_description = db.Column(db.String)
     seeking_venue = db.Column(db.Boolean)
-    venues = db.relationship("Show", back_populates="artist")
+    venues =  db.relationship("Show", back_populates="artist")
 
     def __repr__(self):
         return f'''
@@ -67,8 +65,6 @@ class Artist(db.Model):
       {self.seeking_description} ,
       {self.seeking_venue}
       >'''
-
-# TODO Implement Show and Artist models, and complete all model relationships and properties, as a database migration.
 
 
 class Show(db.Model):
